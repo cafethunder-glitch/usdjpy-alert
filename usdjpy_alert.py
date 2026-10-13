@@ -32,13 +32,12 @@ def fetch_rate() -> float:
 
 def send_line(text: str) -> None:
     res = requests.post(
-        "https://api.line.me/v2/bot/message/push",
+        "https://api.line.me/v2/bot/message/broadcast",
         headers={"Authorization": f"Bearer {LINE_TOKEN}"},
-        json={"to": LINE_USER_ID, "messages": [{"type": "text", "text": text}]},
+        json={"messages": [{"type": "text", "text": text}]},
         timeout=10,
     )
-    if not res.ok:
-        print(f"LINE送信エラー: {res.status_code} {res.text}")
+    print(f"LINE応答: {res.status_code} {res.text}")
     res.raise_for_status()
 
 
