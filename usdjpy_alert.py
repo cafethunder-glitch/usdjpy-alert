@@ -8,8 +8,8 @@ import requests
 
 # ---- 設定(ここを調整) ----
 WINDOW_MIN = 15        # 何分間の値幅を見るか
-THRESHOLD_YEN = 0.4    # この値幅(円)以上動いたら通知
-COOLDOWN_MIN = 30      # 一度通知したら何分間は再通知しないか
+THRESHOLD_YEN = 0.1    # この値幅(円)以上動いたら通知
+COOLDOWN_MIN = 20      # 一度通知したら何分間は再通知しないか
 # --------------------------
 
 STATE_FILE = Path("state/state.json")
