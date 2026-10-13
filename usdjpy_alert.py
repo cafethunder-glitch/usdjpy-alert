@@ -18,9 +18,13 @@ LINE_USER_ID = os.environ["LINE_USER_ID"]
 
 
 def fetch_rate() -> float:
-    # 1分程度で更新されるレートAPIに合わせて、後でここを実装する
-    raise NotImplementedError("使用するレートAPIに合わせて実装してください")
-
+    r = requests.get(
+        "https://api.twelvedata.com/price",
+        params={"symbol": "USD/JPY", "apikey": os.environ["TWELVE_DATA_API_KEY"]},
+        timeout=10,
+    )
+    r.raise_for_status()
+    return float(r.json()["price"])
 
 def send_line(text: str) -> None:
     res = requests.post(
