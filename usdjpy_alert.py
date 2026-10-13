@@ -24,7 +24,11 @@ def fetch_rate() -> float:
         timeout=10,
     )
     r.raise_for_status()
-    return float(r.json()["price"])
+    data = r.json()
+    if "price" not in data:
+        raise RuntimeError(f"APIからの応答が想定外です: {data}")
+    return float(data["price"])
+
 
 def send_line(text: str) -> None:
     res = requests.post(
