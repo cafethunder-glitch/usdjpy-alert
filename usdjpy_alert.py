@@ -10,7 +10,7 @@ import requests
 # ---- 設定(ここを調整) ----
 WINDOW_MIN = 60        # 何分間の値幅を見るか
 THRESHOLD_YEN = 0.1   # この値幅(円)以上動いたら通知
-COOLDOWN_MIN = 30      # 一度通知したら何分間は再通知しないか
+COOLDOWN_MIN = 20      # 一度通知したら何分間は再通知しないか
 # --------------------------
 
 STATE_FILE = Path("state/state.json")
@@ -95,7 +95,7 @@ def main() -> None:
         start = float(candles[-1]["open"])
         direction = "円安方向" if rate > start else "円高方向"
         send_line(
-            f"ドル円が急変動です({direction})\n"
+            f"ドル円が変動しました({direction})\n"
             f"現在: {rate:.3f}円\n"
             f"直近{WINDOW_MIN}分の値幅: {width:.2f}円"
         )
