@@ -8,9 +8,9 @@ from pathlib import Path
 import requests
 
 # ---- 設定(ここを調整) ----
-WINDOW_MIN = 30        # 何分間の値幅を見るか
-THRESHOLD_YEN = 0.1   # この値幅(円)以上動いたら通知
-COOLDOWN_MIN = 30      # 一度通知したら何分間は再通知しないか
+WINDOW_MIN = 5        # 何分間の値幅を見るか
+THRESHOLD_YEN = 0.05   # この値幅(円)以上動いたら通知
+COOLDOWN_MIN = 10      # 一度通知したら何分間は再通知しないか
 # --------------------------
 
 STATE_FILE = Path("state/state.json")
