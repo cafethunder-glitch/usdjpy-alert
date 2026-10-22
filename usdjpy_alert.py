@@ -9,12 +9,13 @@ import requests
 
 # ---- 設定(ここを調整) ----
 WINDOW_MIN = 10        # 何分間の値幅を見るか
-THRESHOLD_YEN = 0.08   # この値幅(円)以上動いたら通知
-COOLDOWN_MIN = 5      # 一度通知したら何分間は再通知しないか
+THRESHOLD_YEN = 0.15   # この値幅(円)以上動いたら通知
+COOLDOWN_MIN = 15      # 一度通知したら何分間は再通知しないか
 # --------------------------
 
 STATE_FILE = Path("state/state.json")
-LINE_TOKEN = os.environ["LINE_CHANNEL_ACCESS_TOKEN"]
+LINE_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "")
+NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "")
 API_KEY = os.environ["TWELVE_DATA_API_KEY"]
 
 
@@ -49,6 +50,34 @@ def send_line(text: str) -> None:
     res.raise_for_status()
 
 
+def send_ntfy(text: str) -> None:
+    res = requests.post(
+        f"https://ntfy.sh/{NTFY_TOPIC}",
+        data=text.encode("utf-8"),
+        timeout=10,
+    )
+    print(f"ntfy応答: {res.status_code}")
+    res.raise_for_status()
+
+
+def notify(text: str) -> bool:
+    """設定されている通知先すべてに送る。1つでも成功すればTrue。"""
+    ok = False
+    channels = (
+        ("LINE", send_line, bool(LINE_TOKEN)),
+        ("ntfy", send_ntfy, bool(NTFY_TOPIC)),
+    )
+    for name, func, enabled in channels:
+        if not enabled:
+            continue
+        try:
+            func(text)
+            ok = True
+        except Exception as e:
+            print(f"{name}への送信に失敗: {e}")
+    return ok
+
+
 def load_state() -> dict:
     if STATE_FILE.exists():
         return json.loads(STATE_FILE.read_text())
@@ -64,6 +93,7 @@ def main() -> None:
     state = load_state()
     now = time.time()
     is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    failed = False
 
     try:
         candles = fetch_candles()
@@ -78,12 +108,16 @@ def main() -> None:
     print(f"現在 {rate:.3f}円(最新データは{age_min:.0f}分前)")
 
     if is_manual:
-        send_line(f"テスト通知です(手動実行)\n現在: {rate:.3f}円")
-        print("LINEにテスト通知を送信しました")
+        if notify(f"テスト通知です(手動実行)\n現在: {rate:.3f}円"):
+            print("テスト通知を送信しました")
+        else:
+            failed = True
 
     if age_min > 20:
         print("最新データが古いため、市場が閉まっている可能性があります。通知しません")
         save_state(state)
+        if failed:
+            sys.exit(1)
         return
 
     hi = max(float(c["high"]) for c in candles)
@@ -94,17 +128,23 @@ def main() -> None:
     if width >= THRESHOLD_YEN and now - state["last_notified"] >= COOLDOWN_MIN * 60:
         start = float(candles[-1]["open"])
         direction = "円安方向" if rate > start else "円高方向"
-        send_line(
-            f"ドル円が変動しました({direction})\n"
+        text = (
+            f"ドル円が急変動です({direction})\n"
             f"現在: {rate:.3f}円\n"
             f"直近{WINDOW_MIN}分の値幅: {width:.2f}円"
         )
-        state["last_notified"] = now
-        print("LINEに急変動の通知を送信しました")
+        if notify(text):
+            state["last_notified"] = now
+            print("急変動の通知を送信しました")
+        else:
+            failed = True
     else:
         print("急変動の通知条件には達していません")
 
     save_state(state)
+    if failed:
+        print("すべての通知先への送信に失敗しました")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
